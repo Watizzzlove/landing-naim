@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J-TALENT® — Алгоритмический подбор персонала и умный найм</title>
+  
+  <meta name="description" content="Алгоритмический подбор персонала и programmatic-рекрутмент. Снижение стоимости найма до 54%, доступ к 100M+ соискателям, гарантия 90 дней.">
+  
+  <!-- Fonts: Syne (All Headings) + Inter (Body Text) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base: '#F0F0F0',
+            dark: '#000000',
+            heroBg: '#08090E',
+            blue: '#0038FF',
+            blueHover: '#1B4DFF',
+            blueLight: '#EBF0FF',
+            cardBg: '#FFFFFF',
+            muted: '#707070',
+            subtle: '#A0A0A0',
+          },
+          fontFamily: {
+            syne: ['Syne', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Libraries: Three.js, Lenis, Lucide -->
+  <script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: #F0F0F0;
+      color: #000000;
+      font-family: 'Inter', sans-serif;
+    }
+
+    h1, h2, h3, h4, .title-syne {
+      font-family: 'Syne', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+    }
+
+    /* Stacking Cards */
+    .sticky-card {
+      position: sticky;
+      top: 100px;
+    }
+
+    /* Burger Drawer */
+    #menu-drawer {
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #menu-drawer.drawer-closed {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-20px);
+    }
+    #menu-drawer.drawer-open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    /* Burger Icon */
+    .burger-line {
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .burger-active .b-top {
+      transform: translateY(3.5px) rotate(45deg);
+    }
+    .burger-active .b-bot {
+      transform: translateY(-3.5px) rotate(-45deg);
+    }
+
+    /* Smooth FAQ Accordion */
+    .faq-wrapper {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .faq-wrapper.is-open {
+      grid-template-rows: 1fr;
+    }
+    .faq-inner {
+      overflow: hidden;
+    }
+
+    /* Ticker animation */
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: flex;
+      width: 200%;
+      animation: marquee 24s linear infinite;
+    }
+
+    /* Programmatic Captions Transition */
+    .prog-caption {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .prog-caption.caption-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Step Checkpoint Active Style */
+    .checkpoint-node.active {
+      background-color: #0038FF;
+      color: #FFFFFF;
+      border-color: #0038FF;
+      box-shadow: 0 0 0 4px rgba(0, 56, 255, 0.25);
+    }
+  </style>
+</head>
+<body class="selection:bg-blue selection:text-white overflow-x-hidden">
+
+  <!-- ========================================================================= -->
+  <!-- 01. FIXED BURGER BUTTON (NO BG BAR, FIXED TOP-RIGHT)                      -->
+  <!-- ========================================================================= -->
+  <div class="fixed top-6 right-6 lg:top-8 lg:right-12 z-50 flex items-center gap-4">
+    <button id="burger-btn" type="button" aria-label="Открыть меню" class="w-12 h-12 flex flex-col items-center justify-center gap-1.5 rounded bg-black text-white hover:bg-blue transition-colors shadow-sm">
+      <span class="burger-line b-top w-5 h-[1.5px] bg-white block"></span>
+      <span class="burger-line b-bot w-5 h-[1.5px] bg-white block"></span>
+    </button>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 02. ABSOLUTE TOP HEADER (TRANSPARENT, SCROLLS OFF WITH PAGE)              -->
+  <!-- ========================================================================= -->
+  <header class="absolute top-0 left-0 w-full z-40 bg-transparent text-white">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-12 h-24 flex items-center justify-between">
+      
+      <!-- Logo -->
+      <a href="#" class="font-syne font-extrabold text-2xl uppercase tracking-tight text-white flex items-center gap-2">
+        <span>J-TALENT</span>
+        <span class="w-2 h-2 rounded-full bg-blue"></span>
+      </a>
+
+      <!-- Header Tabs (Identical to j-vers.com: Кейсы, Карьера, Контакты) -->
+      <nav class="hidden md:flex items-center gap-12 text-xs uppercase tracking-widest text-white/80 font-medium pr-20 font-sans">
+        <a href="#coverage" class="hover:text-blue transition-colors">Кейсы</a>
+        <a href="#steps" class="hover:text-blue transition-colors">Карьера</a>
+        <a href="#contact" class="hover:text-blue transition-colors">Контакты</a>
+        <a href="mailto:team@j-talent.agency" class="text-white hover:text-blue transition-colors lowercase font-mono">team@j-talent.agency</a>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 03. FULLSCREEN BURGER MENU DRAWER                                         -->
+  <!-- ========================================================================= -->
+  <div id="menu-drawer" class="drawer-closed fixed inset-0 z-40 bg-white pt-28 pb-12 px-6 lg:px-16 flex flex-col justify-between overflow-y-auto">
+    <div class="max-w-[1400px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 pt-4">
+      
+      <!-- Huge Navigation Links -->
+      <div class="lg:col-span-8 flex flex-col space-y-3 sm:space-y-5">
+        <a href="#coverage" class="menu-link font-syne font-extrabold text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-black hover:text-blue hover:translate-x-3 transition-all duration-300">
+          01. Преимущества
+        </a>
+        <a href="#programmatic" class="menu-link font-syne font-extrabold text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-black hover:text-blue hover:translate-x-3 transition-all duration-300">
+          02. Алгоритмический найм
+        </a>
+        <a href="#steps" class="menu-link font-syne font-extrabold text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-black hover:text-blue hover:translate-x-3 transition-all duration-300">
+          03. 4 Шага к результату
+        </a>
+        <a href="#calculator" class="menu-link font-syne font-extrabold text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-black hover:text-blue hover:translate-x-3 transition-all duration-300">
+          04. Калькулятор найма
+        </a>
+        <a href="#blog" class="menu-link font-syne font-extrabold text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-black hover:text-blue hover:translate-x-3 transition-all duration-300">
+          05. База знаний (SEO)
+        </a>
+        <a href="#faq" class="menu-link font-syne font-extrabold text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-black hover:text-blue hover:translate-x-3 transition-all duration-300">
+          06. FAQ
+        </a>
+        <a href="#contact" class="menu-link font-syne font-extrabold text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-black hover:text-blue hover:translate-x-3 transition-all duration-300">
+          07. Начать подбор
+        </a>
+      </div>
+
+      <!-- Drawer Secondary Info -->
+      <div class="lg:col-span-4 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-black/10 pt-8 lg:pt-0 lg:pl-12 text-sm font-sans">
+        <div class="space-y-8">
+          <div>
+            <span class="text-xs uppercase tracking-widest text-muted block mb-2 font-mono">Email для связи</span>
+            <a href="mailto:team@j-talent.agency" class="font-syne font-bold text-2xl uppercase hover:text-blue transition-colors block">
+              team@j-talent.agency
+            </a>
+            <a href="tel:+74957902210" class="text-muted hover:text-black mt-2 block font-mono">
+              +7 (495) 790-22-10
+            </a>
+          </div>
+
+          <div>
+            <span class="text-xs uppercase tracking-widest text-muted block mb-2 font-mono">Локация</span>
+            <p class="text-muted leading-relaxed">
+              Москва, Пресненская наб. 12<br>
+              Деловой комплекс «Федерация»
+            </p>
+          </div>
+
+          <div>
+            <span class="text-xs uppercase tracking-widest text-muted block mb-2 font-mono">Платформа</span>
+            <p class="text-xs text-muted leading-relaxed">
+              Прототип подготовлен для переноса в Zero-блоки Tilda и стандартные потоки (Feeds) под продвижение по SEO.
+            </p>
+          </div>
+        </div>
+
+        <div class="pt-8">
+          <a href="#contact" class="menu-link inline-flex items-center justify-center w-full py-4 bg-black hover:bg-blue text-white text-xs uppercase tracking-widest font-bold rounded transition-colors">
+            Оставить бриф
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <main>
+
+    <!-- ========================================================================= -->
+    <!-- 04. HERO SECTION (DARK, CALM 3D GRAPHIC, TRANSPARENT HEADER OVERLAY)      -->
+    <!-- ========================================================================= -->
+    <section class="relative min-h-screen bg-heroBg text-white overflow-hidden flex flex-col justify-between pt-28 pb-12 lg:pt-36 lg:pb-16 border-b border-white/10">
+      
+      <!-- Slow Ambient 3D Canvas -->
+      <canvas id="hero-3d-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,56,255,0.22)_0%,rgba(8,9,14,0)_70%)] pointer-events-none z-0"></div>
+
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-12 w-full relative z-10 my-auto">
+        <div class="max-w-4xl">
+          <h1 class="font-syne font-extrabold text-5xl sm:text-7xl lg:text-[7.5rem] uppercase tracking-tighter leading-[0.9] mb-8 select-none">
+            ПОЛНЫЙ<br>
+            КОНТРОЛЬ<br>
+            <span class="text-white/40">НАД НАЙМОМ</span>
+          </h1>
+
+          <p class="text-lg sm:text-xl text-white/70 max-w-xl leading-relaxed mb-10 font-normal">
+            Никаких пустых бюджетов и сотен нерелевантных откликов. Проверенные алгоритмы и программатик-реклама находят нужных специалистов вдвое быстрее.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-5">
+            <a href="#contact" class="px-8 py-4 bg-white text-black hover:bg-blue hover:text-white text-xs uppercase tracking-widest font-bold rounded transition-all duration-200">
+              Начать подбор
+            </a>
+            <a href="#coverage" class="px-8 py-4 border border-white/20 text-white hover:border-white text-xs uppercase tracking-widest font-bold rounded transition-colors">
+              Изучить подход
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticker -->
+      <div class="border-t border-white/10 pt-4 overflow-hidden select-none relative z-10">
+        <div class="animate-marquee whitespace-nowrap flex items-center gap-12 text-xs uppercase tracking-widest text-white/50 font-mono">
+          <span>Снижение стоимости привлечения до 54%</span>
+          <span>•</span>
+          <span>Охват более 100 000 000 кандидатов</span>
+          <span>•</span>
+          <span>Первые релевантные финалисты через 7 дней</span>
+          <span>•</span>
+          <span>Гарантия бесплатной замены до 90 дней</span>
+          <span>•</span>
+          <!-- Duplicate for seamless scroll -->
+          <span>Снижение стоимости привлечения до 54%</span>
+          <span>•</span>
+          <span>Охват более 100 000 000 кандидатов</span>
+          <span>•</span>
+          <span>Первые релевантные финалисты через 7 дней</span>
+          <span>•</span>
+          <span>Гарантия бесплатной замены до 90 дней</span>
+          <span>•</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 05. STATEMENT SECTION (UNIFIED SYNE FONT)                                  -->
+    <!-- ========================================================================= -->
+    <section class="py-24 lg:py-36 border-b border-black/5 bg-[#F0F0F0]">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-12">
+        <h2 class="font-syne font-extrabold text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight leading-tight text-black max-w-5xl">
+          Зачем полагаться на человеческую рутину и случайность, когда алгоритмы могут расходовать ваш бюджет умнее?
+        </h2>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 06. STACKING CARDS (RELIABLE INLINE VECTOR VISUALS + METRICS ON LEFT)     -->
+    <!-- ========================================================================= -->
+    <section id="coverage" class="py-24 lg:py-36 max-w-[1400px] mx-auto px-6 lg:px-12">
+      
+      <div class="mb-16">
+        <h2 class="font-syne font-extrabold text-4xl sm:text-6xl uppercase tracking-tight">
+          КАК ЭТО РАБОТАЕТ
+        </h2>
+      </div>
+
+      <div class="space-y-8">
+        
+        <!-- Card 1: COVERAGE / ОХВАТ -->
+        <div class="sticky-card" style="top: 100px;">
+          <div class="bg-white rounded-3xl border border-black/10 shadow-sm p-8 lg:p-14 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div class="lg:col-span-7 flex flex-col justify-between h-full">
+              <div>
+                <span class="text-xs font-mono uppercase tracking-widest text-blue font-bold block mb-4">
+                  01 / СИСТЕМА
+                </span>
+                <h3 class="font-syne font-extrabold text-3xl sm:text-5xl uppercase tracking-tight mb-5">
+                  ОХВАТ
+                </h3>
+                <p class="text-base sm:text-lg text-muted leading-relaxed mb-8">
+                  Доступ к пулу из 100M+ соискателей с проверенных работных платформ, закрытых IT-сообществ и профессиональных сетей. Мы гарантируем, что ваша вакансия будет замечена лучшими специалистами.
+                </p>
+              </div>
+              <div class="pt-6 border-t border-black/10 flex items-baseline gap-4">
+                <span class="font-syne font-extrabold text-4xl sm:text-5xl text-black">100M+</span>
+                <span class="text-xs uppercase text-muted tracking-wider">Кандидатов в единой базе поиска</span>
+              </div>
+            </div>
+            
+            <div class="lg:col-span-5 aspect-[4/3] rounded-2xl overflow-hidden bg-black flex items-center justify-center p-8 relative">
+              <svg viewBox="0 0 400 300" class="w-full h-full text-blue" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="200" cy="150" r="130" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" opacity="0.4"/>
+                <circle cx="200" cy="150" r="90" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+                <circle cx="200" cy="150" r="50" stroke="currentColor" stroke-width="2"/>
+                <circle cx="200" cy="150" r="6" fill="white"/>
+                <line x1="200" y1="150" x2="310" y2="70" stroke="currentColor" stroke-width="2"/>
+                <circle cx="310" cy="70" r="5" fill="#0038FF"/>
+                <line x1="200" y1="150" x2="90" y2="210" stroke="currentColor" stroke-width="2"/>
+                <circle cx="90" cy="210" r="5" fill="#0038FF"/>
+                <line x1="200" y1="150" x2="280" y2="230" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <circle cx="280" cy="230" r="4" fill="white"/>
+                <text x="20" y="40" fill="white" font-family="Syne" font-size="14" font-weight="bold" letter-spacing="2">RADAR NET // 100M</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: CUSTOMIZATION / КАСТОМИЗАЦИЯ -->
+        <div class="sticky-card" style="top: 120px;">
+          <div class="bg-white rounded-3xl border border-black/10 shadow-sm p-8 lg:p-14 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div class="lg:col-span-7 flex flex-col justify-between h-full">
+              <div>
+                <span class="text-xs font-mono uppercase tracking-widest text-blue font-bold block mb-4">
+                  02 / СИСТЕМА
+                </span>
+                <h3 class="font-syne font-extrabold text-3xl sm:text-5xl uppercase tracking-tight mb-5">
+                  КАСТОМИЗАЦИЯ
+                </h3>
+                <p class="text-base sm:text-lg text-muted leading-relaxed mb-8">
+                  Никаких шаблонных описаний и пустых рассылок. Мы глубоко анализируем ваши реальные задачи, стек технологий и корпоративную культуру, адаптируя предложение под мотивацию финалиста.
+                </p>
+              </div>
+              <div class="pt-6 border-t border-black/10 flex items-baseline gap-4">
+                <span class="font-syne font-extrabold text-4xl sm:text-5xl text-blue">98.4%</span>
+                <span class="text-xs uppercase text-muted tracking-wider">Точность соответствия профилю</span>
+              </div>
+            </div>
+            
+            <div class="lg:col-span-5 aspect-[4/3] rounded-2xl overflow-hidden bg-black flex items-center justify-center p-8 relative">
+              <svg viewBox="0 0 400 300" class="w-full h-full text-blue" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="50" y="50" width="300" height="200" rx="8" stroke="white" stroke-width="1.5" opacity="0.3"/>
+                <rect x="70" y="80" width="110" height="40" rx="4" fill="#0038FF"/>
+                <text x="85" y="105" fill="white" font-family="Inter" font-size="12" font-weight="600">HARD SKILLS</text>
+                <rect x="200" y="80" width="130" height="40" rx="4" stroke="#0038FF" stroke-width="1.5"/>
+                <text x="215" y="105" fill="white" font-family="Inter" font-size="12">CULTURE FIT</text>
+                <rect x="70" y="140" width="160" height="40" rx="4" stroke="white" stroke-width="1" opacity="0.6"/>
+                <text x="85" y="165" fill="white" font-family="Inter" font-size="12">SALARY TARGET</text>
+                <rect x="250" y="140" width="80" height="40" rx="4" fill="white"/>
+                <text x="268" y="165" fill="black" font-family="Inter" font-size="12" font-weight="bold">MATCH</text>
+                <text x="20" y="280" fill="white" font-family="Syne" font-size="14" font-weight="bold" letter-spacing="2">ICP PROFILE // 98.4%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: DATA / АНАЛИТИКА ДАННЫХ -->
+        <div class="sticky-card" style="top: 140px;">
+          <div class="bg-white rounded-3xl border border-black/10 shadow-sm p-8 lg:p-14 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div class="lg:col-span-7 flex flex-col justify-between h-full">
+              <div>
+                <span class="text-xs font-mono uppercase tracking-widest text-blue font-bold block mb-4">
+                  03 / СИСТЕМА
+                </span>
+                <h3 class="font-syne font-extrabold text-3xl sm:text-5xl uppercase tracking-tight mb-5">
+                  АНАЛИТИКА ДАННЫХ
+                </h3>
+                <p class="text-base sm:text-lg text-muted leading-relaxed mb-8">
+                  Полная прозрачность воронки в реальном времени. Мониторинг зарплатных вилок конкурентов, поведения соискателей и эффективности рекламных каналов.
+                </p>
+              </div>
+              <div class="pt-6 border-t border-black/10 flex items-baseline gap-4">
+                <span class="font-syne font-extrabold text-4xl sm:text-5xl text-black">-54%</span>
+                <span class="text-xs uppercase text-muted tracking-wider">Снижение стоимости отклика (CPA)</span>
+              </div>
+            </div>
+            
+            <div class="lg:col-span-5 aspect-[4/3] rounded-2xl overflow-hidden bg-black flex items-center justify-center p-8 relative">
+              <svg viewBox="0 0 400 300" class="w-full h-full text-blue" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 220 L130 180 L210 140 L290 90 L350 60" stroke="#0038FF" stroke-width="3"/>
+                <path d="M50 220 L130 180 L210 140 L290 90 L350 60 L350 250 L50 250 Z" fill="url(#blueGrad)" opacity="0.25"/>
+                <defs>
+                  <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#0038FF"/>
+                    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="350" cy="60" r="6" fill="#0038FF"/>
+                <line x1="50" y1="250" x2="350" y2="250" stroke="white" stroke-width="1" opacity="0.3"/>
+                <text x="20" y="40" fill="white" font-family="Syne" font-size="14" font-weight="bold" letter-spacing="2">CPA COST // -54%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: FULL-CYCLE / ПОЛНЫЙ ЦИКЛ -->
+        <div class="sticky-card" style="top: 160px;">
+          <div class="bg-white rounded-3xl border border-black/10 shadow-sm p-8 lg:p-14 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div class="lg:col-span-7 flex flex-col justify-between h-full">
+              <div>
+                <span class="text-xs font-mono uppercase tracking-widest text-blue font-bold block mb-4">
+                  04 / СИСТЕМА
+                </span>
+                <h3 class="font-syne font-extrabold text-3xl sm:text-5xl uppercase tracking-tight mb-5">
+                  ПОЛНЫЙ ЦИКЛ
+                </h3>
+                <p class="text-base sm:text-lg text-muted leading-relaxed mb-8">
+                  Персональный ведущий рекрутер и координатор ведут процесс от первичного брифа до успешного завершения испытательного срока.
+                </p>
+              </div>
+              <div class="pt-6 border-t border-black/10 flex items-baseline gap-4">
+                <span class="font-syne font-extrabold text-4xl sm:text-5xl text-blue">90 ДНЕЙ</span>
+                <span class="text-xs uppercase text-muted tracking-wider">Гарантия бесплатной замены сотрудника</span>
+              </div>
+            </div>
+            
+            <div class="lg:col-span-5 aspect-[4/3] rounded-2xl overflow-hidden bg-black flex items-center justify-center p-8 relative">
+              <svg viewBox="0 0 400 300" class="w-full h-full text-blue" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="200,40 320,90 320,180 200,260 80,180 80,90" stroke="#0038FF" stroke-width="2" fill="none"/>
+                <polygon points="200,60 300,105 300,170 200,235 100,170 100,105" stroke="white" stroke-width="1" opacity="0.4" fill="none"/>
+                <text x="145" y="160" fill="white" font-family="Syne" font-size="28" font-weight="bold">90 ДНЕЙ</text>
+                <text x="135" y="185" fill="#0038FF" font-family="Inter" font-size="11" letter-spacing="2">ГАРАНТИЯ ЗАМЕНЫ</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 07. ALGORITHMIC HIRING & SCROLL-ONLY 3D SPHERE (NO CUTOFF, EARLIER TEXTS) -->
+    <!-- ========================================================================= -->
+    <section id="programmatic" class="bg-dark text-white py-28 lg:py-40 relative border-y border-white/10">
+      
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-12 relative z-10">
+        
+        <!-- Natural Russian Headline -->
+        <div class="text-center max-w-4xl mx-auto mb-16">
+          <h2 class="font-syne font-extrabold text-4xl sm:text-6xl lg:text-7xl uppercase tracking-tight leading-none mb-6">
+            АЛГОРИТМИЧЕСКИЙ НАЙМ: <br>
+            <span class="text-white/40">ЭКОНОМИЯ БЮДЖЕТА</span>
+          </h2>
+          <p class="text-lg text-white/60 max-w-2xl mx-auto leading-relaxed font-sans">
+            Интеллектуальное управление рекламными кампаниями и перераспределение бюджета в реальном времени.
+          </p>
+        </div>
+
+        <!-- Spacious Stage with Zero Clipping & Seamless Background -->
+        <div class="relative w-full max-w-5xl mx-auto h-[600px] sm:h-[700px] flex items-center justify-center my-6">
+          
+          <!-- Seamless 3D Canvas (Rotates ONLY on Scroll, Perfect Camera Fit) -->
+          <canvas id="prog-3d-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
+
+          <!-- Dynamic Reveal Caption 01: Top Right (Appears at 10% progress) -->
+          <div id="prog-cap-1" class="prog-caption absolute top-8 right-2 sm:right-8 max-w-[280px] p-5 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 z-10 shadow-lg">
+            <span class="text-xs font-mono uppercase text-blue font-bold block mb-1">01 / СКОРОСТЬ</span>
+            <h4 class="font-syne font-bold text-lg uppercase text-white mb-1">БЫСТРЫЙ СРОК НАЙМА</h4>
+            <p class="text-xs text-white/70 leading-relaxed font-sans">
+              Первые проверенные кандидаты готовы к интервью уже через 7 дней после старта.
+            </p>
+          </div>
+
+          <!-- Dynamic Reveal Caption 02: Middle Left (Appears at 32% progress) -->
+          <div id="prog-cap-2" class="prog-caption absolute top-1/2 -translate-y-1/2 left-2 sm:left-8 max-w-[280px] p-5 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 z-10 shadow-lg">
+            <span class="text-xs font-mono uppercase text-blue font-bold block mb-1">02 / ЭКОНОМИЯ</span>
+            <h4 class="font-syne font-bold text-lg uppercase text-white mb-1">ОПТИМИЗАЦИЯ СТАВОК</h4>
+            <p class="text-xs text-white/70 leading-relaxed font-sans">
+              Алгоритм отключает неэффективные каналы и экономит до 54% бюджета на отклик.
+            </p>
+          </div>
+
+          <!-- Dynamic Reveal Caption 03: Bottom Right (Appears early at 55% progress) -->
+          <div id="prog-cap-3" class="prog-caption absolute bottom-8 right-2 sm:right-8 max-w-[280px] p-5 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 z-10 shadow-lg">
+            <span class="text-xs font-mono uppercase text-blue font-bold block mb-1">03 / ТОЧНОСТЬ</span>
+            <h4 class="font-syne font-bold text-lg uppercase text-white mb-1">ПАССИВНЫЕ КАНДИДАТЫ</h4>
+            <p class="text-xs text-white/70 leading-relaxed font-sans">
+              Прямой таргетинг привлекает специалистов, не размещающих резюме в открытом доступе.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 08. 4 STEPS ON SCROLL (TALL STEPS, CHECKPOINT NODES, SCROLL-ONLY 3D)      -->
+    <!-- ========================================================================= -->
+    <section id="steps" class="py-24 lg:py-36 border-b border-black/5 bg-[#F0F0F0]">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-12">
+        
+        <div class="mb-20">
+          <h2 class="font-syne font-extrabold text-4xl sm:text-6xl uppercase tracking-tight">
+            4 ШАГА К РЕЗУЛЬТАТУ
+          </h2>
+        </div>
+
+        <!-- 3-Column Layout: Left Sticky 3D (No White Box) | Center Progress Line with Checkpoints | Right Tall Steps -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative">
+          
+          <!-- Column 1: Left Sticky Title & Seamless 3D Model (lg:col-span-5) -->
+          <div class="lg:col-span-5 lg:sticky lg:top-28 space-y-6">
+            <p class="text-muted text-lg leading-relaxed max-w-sm">
+              Прозрачный путь от первичного брифа до официального выхода финалиста в штат.
+            </p>
+            <!-- Completely Seamless 3D element (No white card / no borders) -->
+            <div class="w-full aspect-square max-w-[360px] flex items-center justify-center relative">
+              <canvas id="steps-3d-canvas" class="w-full h-full"></canvas>
+            </div>
+          </div>
+
+          <!-- Column 2: Center Vertical Progress Line with Checkpoints (lg:col-span-1 hidden lg:flex) -->
+          <div class="lg:col-span-1 hidden lg:flex flex-col items-center justify-between h-full relative py-6">
+            <!-- Full Height Background Track -->
+            <div class="w-[2px] h-full bg-black/10 absolute top-0 bottom-0 left-1/2 -translate-x-1/2"></div>
+            <!-- Dynamic Blue Progress Line -->
+            <div id="steps-vertical-bar" class="w-[3px] bg-blue absolute top-0 left-1/2 -translate-x-1/2 transition-all duration-300" style="height: 15%;"></div>
+            
+            <!-- Visual Checkpoint Nodes (Numbered 1 to 4) -->
+            <div class="flex flex-col justify-between h-full space-y-48 z-10 py-8">
+              <div id="cp-1" class="checkpoint-node active w-9 h-9 rounded-full border-2 border-black/20 bg-base flex items-center justify-center font-mono text-xs font-bold transition-all duration-300">01</div>
+              <div id="cp-2" class="checkpoint-node w-9 h-9 rounded-full border-2 border-black/20 bg-base flex items-center justify-center font-mono text-xs font-bold transition-all duration-300">02</div>
+              <div id="cp-3" class="checkpoint-node w-9 h-9 rounded-full border-2 border-black/20 bg-base flex items-center justify-center font-mono text-xs font-bold transition-all duration-300">03</div>
+              <div id="cp-4" class="checkpoint-node w-9 h-9 rounded-full border-2 border-black/20 bg-base flex items-center justify-center font-mono text-xs font-bold transition-all duration-300">04</div>
+            </div>
+          </div>
+
+          <!-- Column 3: Right Extra-Tall Spacious Steps (lg:col-span-6) -->
+          <div class="lg:col-span-6 space-y-40 lg:space-y-56 pl-0 lg:pl-6">
+            
+            <!-- Step 01 -->
+            <div class="step-card min-h-[40vh] flex flex-col justify-center pb-12 border-b border-black/10">
+              <span class="font-mono text-xs uppercase text-blue font-bold block mb-4">01 // СТАРТ</span>
+              <h3 class="font-syne font-extrabold text-3xl sm:text-4xl uppercase tracking-tight mb-5">
+                АУДИТ ВАКАНСИИ И СТРАТЕГИЯ
+              </h3>
+              <p class="text-muted leading-relaxed font-sans text-lg">
+                Глубокий анализ требований и стека. Формируем профиль идеального кандидата, анализируем вилки зарплат по рынку и утверждаем карту источников привлечения.
+              </p>
+            </div>
+
+            <!-- Step 02 -->
+            <div class="step-card min-h-[40vh] flex flex-col justify-center pb-12 border-b border-black/10">
+              <span class="font-mono text-xs uppercase text-blue font-bold block mb-4">02 // СОРСИНГ</span>
+              <h3 class="font-syne font-extrabold text-3xl sm:text-4xl uppercase tracking-tight mb-5">
+                ТЕСТИРОВАНИЕ КАНАЛОВ
+              </h3>
+              <p class="text-muted leading-relaxed font-sans text-lg">
+                Запускаем алгоритмический поиск по 15+ профессиональным базам и каналам. Тестируем рекламные месседжи и собираем первый пул релевантных откликов.
+              </p>
+            </div>
+
+            <!-- Step 03 -->
+            <div class="step-card min-h-[40vh] flex flex-col justify-center pb-12 border-b border-black/10">
+              <span class="font-mono text-xs uppercase text-blue font-bold block mb-4">03 // СКРИНИНГ</span>
+              <h3 class="font-syne font-extrabold text-3xl sm:text-4xl uppercase tracking-tight mb-5">
+                ОПТИМИЗАЦИЯ И ИНТЕРВЬЮ
+              </h3>
+              <p class="text-muted leading-relaxed font-sans text-lg">
+                Проводим предварительные технические интервью, верифицируем уровень хард-скиллов и передаем вам шорт-лист только лучших 3–5 финалистов.
+              </p>
+            </div>
+
+            <!-- Step 04 -->
+            <div class="step-card min-h-[40vh] flex flex-col justify-center pb-12">
+              <span class="font-mono text-xs uppercase text-blue font-bold block mb-4">04 // РЕЗУЛЬТАТ</span>
+              <h3 class="font-syne font-extrabold text-3xl sm:text-4xl uppercase tracking-tight mb-5">
+                ОФФЕР И ГАРАНТИЯ 90 ДНЕЙ
+              </h3>
+              <p class="text-muted leading-relaxed font-sans text-lg">
+                Помогаем согласовать условия оффера и сопровождаем сотрудника в течение испытательного срока с гарантией бесплатной замены до 90 дней.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 09. CLEAN CALCULATOR (NO UGLY BORDERS, MINIMAL & DYNAMIC)                 -->
+    <!-- ========================================================================= -->
+    <section id="calculator" class="py-24 lg:py-36 border-b border-black/5 bg-white">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-12">
+        
+        <div class="max-w-2xl mb-16">
+          <h2 class="font-syne font-extrabold text-3xl sm:text-5xl uppercase tracking-tight">
+            РАСЧЕТ СРОКОВ И БЮДЖЕТА
+          </h2>
+        </div>
+
+        <!-- Calculator Container: Zero ugly borders, soft rounded card -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 bg-base p-8 lg:p-14 rounded-3xl shadow-sm">
+          
+          <div class="lg:col-span-7 space-y-10">
+            <!-- Role Selection -->
+            <div>
+              <span class="block text-xs uppercase tracking-wider text-black font-semibold mb-4 font-mono">
+                Направление поиска
+              </span>
+              <div class="grid grid-cols-2 gap-3" id="calc-roles">
+                <button type="button" class="calc-btn active p-4 bg-black text-white text-left text-xs uppercase font-semibold rounded-xl transition-all" data-role="it">
+                  IT & Разработка
+                </button>
+                <button type="button" class="calc-btn p-4 bg-white text-black text-left text-xs uppercase font-semibold rounded-xl hover:bg-black/5 transition-all" data-role="sales">
+                  B2B Продажи
+                </button>
+                <button type="button" class="calc-btn p-4 bg-white text-black text-left text-xs uppercase font-semibold rounded-xl hover:bg-black/5 transition-all" data-role="ops">
+                  Маркетинг & Продукт
+                </button>
+                <button type="button" class="calc-btn p-4 bg-white text-black text-left text-xs uppercase font-semibold rounded-xl hover:bg-black/5 transition-all" data-role="exec">
+                  Топ-менеджмент
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Slider -->
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-xs uppercase tracking-wider font-semibold font-mono">Количество специалистов</span>
+                <span id="calc-count-text" class="font-syne font-bold text-blue text-lg">2 специалиста</span>
+              </div>
+              <input type="range" id="calc-slider" min="1" max="10" value="2" step="1" class="w-full h-2.5 bg-black/15 rounded-lg appearance-none cursor-pointer accent-blue">
+            </div>
+          </div>
+
+          <!-- Dynamic Output Card -->
+          <div class="lg:col-span-5 bg-white p-8 lg:p-10 rounded-2xl flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="text-xs uppercase text-muted tracking-widest block mb-6 font-mono">Оценка условий</span>
+              
+              <div class="space-y-5 text-sm font-sans">
+                <div class="flex justify-between items-baseline pb-3 border-b border-black/5">
+                  <span class="text-muted">Срок до первых офферов</span>
+                  <span id="calc-time" class="font-syne font-bold text-black text-base">7 – 12 дней</span>
+                </div>
+                <div class="flex justify-between items-baseline pb-3 border-b border-black/5">
+                  <span class="text-muted">Охват кандидатов</span>
+                  <span id="calc-reach" class="font-syne font-bold text-black text-base">~1 800 резюме</span>
+                </div>
+                <div class="flex justify-between items-baseline pb-3 border-b border-black/5">
+                  <span class="text-muted">Гарантия замены</span>
+                  <span class="font-syne font-bold text-blue text-base">90 дней (0 ₽)</span>
+                </div>
+                <div class="flex justify-between items-baseline pb-3 border-b border-black/5">
+                  <span class="text-muted">Экономия бюджета</span>
+                  <span id="calc-save" class="font-syne font-bold text-emerald-600 text-base">до 42% к рынку</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-8">
+              <a href="#contact" class="block text-center py-4 bg-black hover:bg-blue text-white text-xs uppercase tracking-widest font-bold rounded-xl transition-colors font-mono">
+                Зафиксировать расчет
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 10. KNOWLEDGE BASE (SEO BLOG IN CRISP BENTO GRID, NO BADGES/NOISE)        -->
+    <!-- ========================================================================= -->
+    <section id="blog" class="py-24 lg:py-36 border-b border-black/5 bg-[#F0F0F0]">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-12">
+        
+        <div class="mb-16">
+          <h2 class="font-syne font-extrabold text-4xl sm:text-6xl uppercase tracking-tight">
+            БАЗА ЗНАНИЙ
+          </h2>
+        </div>
+
+        <!-- Bento Grid Layout with Guaranteed Visuals -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          <!-- Bento Big Feature (lg:col-span-7) -->
+          <article class="lg:col-span-7 bg-white rounded-3xl p-8 sm:p-12 flex flex-col justify-between hover:shadow-md transition-all group shadow-sm">
+            <div>
+              <span class="text-xs font-mono uppercase text-blue font-bold block mb-4">IT-РЕКРУТМЕНТ // 8 МИН ЧТЕНИЯ</span>
+              <h3 class="font-syne font-extrabold text-2xl sm:text-4xl uppercase tracking-tight mb-6 group-hover:text-blue transition-colors">
+                Как нанять Senior Go / Rust разработчика в 2026 году без переплат
+              </h3>
+              <p class="text-muted text-base sm:text-lg leading-relaxed mb-8">
+                Практический гайд по сорсингу в закрытых сообществах и алгоритм преодоления сопротивления пассивных специалистов при первом контакте.
+              </p>
+            </div>
+            
+            <!-- Guaranteed Vector Artwork -->
+            <div class="aspect-[16/9] rounded-2xl bg-black overflow-hidden mb-6 flex items-center justify-center p-6">
+              <svg viewBox="0 0 600 300" class="w-full h-full text-blue" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="30" y="30" width="540" height="240" rx="8" stroke="white" stroke-width="1" opacity="0.3"/>
+                <circle cx="150" cy="150" r="70" stroke="#0038FF" stroke-width="2"/>
+                <circle cx="150" cy="150" r="6" fill="white"/>
+                <line x1="150" y1="150" x2="350" y2="100" stroke="#0038FF" stroke-width="2"/>
+                <circle cx="350" cy="100" r="8" fill="white"/>
+                <line x1="150" y1="150" x2="450" y2="190" stroke="white" stroke-width="1.5" stroke-dasharray="3 3"/>
+                <circle cx="450" cy="190" r="8" fill="#0038FF"/>
+                <text x="370" y="105" fill="white" font-family="Inter" font-size="12" font-weight="bold">GO / RUST</text>
+                <text x="50" y="250" fill="white" font-family="Syne" font-size="12" letter-spacing="2">SOURCING ARCHITECTURE</text>
+              </svg>
+            </div>
+
+            <div class="text-xs uppercase font-bold flex items-center gap-2 font-mono">
+              Читать статью <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </div>
+          </article>
+
+          <!-- Bento Stacked Side (lg:col-span-5) -->
+          <div class="lg:col-span-5 flex flex-col gap-8">
+            
+            <article class="bg-white rounded-3xl p-8 flex flex-col justify-between hover:shadow-md transition-all group flex-1 shadow-sm">
+              <div>
+                <span class="text-xs font-mono uppercase text-blue font-bold block mb-3">ПРОГРАММАТИК // 5 МИН</span>
+                <h3 class="font-syne font-bold text-xl uppercase tracking-tight mb-4 group-hover:text-blue transition-colors">
+                  Программатик-реклама вакансий: кейс снижения CPA на 54%
+                </h3>
+                <p class="text-muted text-sm leading-relaxed">
+                  Как мы перестроили распределение рекламного бюджета для холдинга и ускорили закрытие позиций в 3 раза.
+                </p>
+              </div>
+              <div class="pt-6 text-xs uppercase font-bold flex items-center gap-1 font-mono">
+                Читать кейс <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </div>
+            </article>
+
+            <article class="bg-white rounded-3xl p-8 flex flex-col justify-between hover:shadow-md transition-all group flex-1 shadow-sm">
+              <div>
+                <span class="text-xs font-mono uppercase text-blue font-bold block mb-3">ОФФЕР // 4 МИН</span>
+                <h3 class="font-syne font-bold text-xl uppercase tracking-tight mb-4 group-hover:text-blue transition-colors">
+                  5 критических ошибок в оффере, из-за которых уходят кандидаты
+                </h3>
+                <p class="text-muted text-sm leading-relaxed">
+                  Почему неверные формулировки бонусов и испытательного срока рушат конверсию на финальном шаге найма.
+                </p>
+              </div>
+              <div class="pt-6 text-xs uppercase font-bold flex items-center gap-1 font-mono">
+                Читать статью <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </div>
+            </article>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 11. FAQ (GIANT MASSIVE TITLE SPANNING HALF SCREEN + SMOOTH ACCORDION)     -->
+    <!-- ========================================================================= -->
+    <section id="faq" class="py-24 lg:py-36 border-b border-black/5 bg-white overflow-hidden">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-12">
+        
+        <!-- Giant Screen-filling Title (Identical to j-vers.com) -->
+        <div class="mb-12">
+          <h2 class="font-syne font-extrabold text-[5rem] sm:text-[9rem] lg:text-[14rem] uppercase tracking-tighter leading-none select-none text-black">
+            FAQ
+          </h2>
+        </div>
+
+        <div class="divide-y divide-black/10 border-y border-black/10 max-w-5xl">
+          
+          <!-- Q1 -->
+          <div class="faq-item py-8">
+            <button type="button" class="faq-btn w-full flex items-center justify-between text-left font-syne font-bold text-xl sm:text-3xl uppercase hover:text-blue transition-colors group">
+              <span>(01) Как вы гарантируете качество кандидатов?</span>
+              <span class="faq-sign text-3xl font-light text-blue group-hover:rotate-45 transition-transform duration-300">+</span>
+            </button>
+            <div class="faq-wrapper">
+              <div class="faq-inner pt-6 text-muted leading-relaxed text-base font-sans max-w-3xl">
+                Мы используем трехступенчатый скоринг: алгоритмическая проверка стека по кодовой базе, техническое интервью с экспертом соответствующего грейда и проверка отзывов с двух предыдущих мест работы.
+              </div>
+            </div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="faq-item py-8">
+            <button type="button" class="faq-btn w-full flex items-center justify-between text-left font-syne font-bold text-xl sm:text-3xl uppercase hover:text-blue transition-colors group">
+              <span>(02) В каких нишах и специализациях вы работаете?</span>
+              <span class="faq-sign text-3xl font-light text-blue group-hover:rotate-45 transition-transform duration-300">+</span>
+            </button>
+            <div class="faq-wrapper">
+              <div class="faq-inner pt-6 text-muted leading-relaxed text-base font-sans max-w-3xl">
+                Наша ключевая специализация: IT и разработка (Go, Rust, Python, Java, Frontend, DevOps, QA), Product & Data Management, B2B-продажи и C-Level топ-менеджмент (CTO, VP of Sales, CEO).
+              </div>
+            </div>
+          </div>
+
+          <!-- Q3 -->
+          <div class="faq-item py-8">
+            <button type="button" class="faq-btn w-full flex items-center justify-between text-left font-syne font-bold text-xl sm:text-3xl uppercase hover:text-blue transition-colors group">
+              <span>(03) Что если сотрудник не пройдет испытательный срок?</span>
+              <span class="faq-sign text-3xl font-light text-blue group-hover:rotate-45 transition-transform duration-300">+</span>
+            </button>
+            <div class="faq-wrapper">
+              <div class="faq-inner pt-4 text-muted leading-relaxed text-base font-sans max-w-3xl">
+                В договоре официально зафиксирован гарантийный период до 90 дней. Если специалист уходит или не справляется с задачами, мы перезапускаем поиск и предоставляем бесплатную замену.
+              </div>
+            </div>
+          </div>
+
+          <!-- Q4 -->
+          <div class="faq-item py-8">
+            <button type="button" class="faq-btn w-full flex items-center justify-between text-left font-syne font-bold text-xl sm:text-3xl uppercase hover:text-blue transition-colors group">
+              <span>(04) Какова модель оплаты и порядок расчетов?</span>
+              <span class="faq-sign text-3xl font-light text-blue group-hover:rotate-45 transition-transform duration-300">+</span>
+            </button>
+            <div class="faq-wrapper">
+              <div class="faq-inner pt-4 text-muted leading-relaxed text-base font-sans max-w-3xl">
+                Мы работаем по модели Success Fee (оплата за результат после официального выхода кандидата на работу). Все рекламные programmatic-расходы уже включены в стоимость.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 12. VIBRANT CONTACT / PARTNER SECTION (NO UGLY BORDERS, COBALT ACCENT)    -->
+    <!-- ========================================================================= -->
+    <section id="contact" class="py-24 lg:py-36 bg-[#F0F0F0] border-b border-black/5">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-12">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          
+          <div class="lg:col-span-5">
+            <h2 class="font-syne font-extrabold text-4xl sm:text-6xl uppercase tracking-tight mb-8">
+              НАЧАТЬ ПОИСК
+            </h2>
+            <p class="text-muted text-lg leading-relaxed mb-8">
+              Заполните краткую информацию. Мы бесплатно проведем аудит зарплатной вилки и подготовим карту сорсинга в течение 24 часов.
+            </p>
+            <div class="space-y-3 font-mono text-sm">
+              <div class="text-muted">Прямая связь: <a href="mailto:team@j-talent.agency" class="text-black font-bold hover:text-blue">team@j-talent.agency</a></div>
+              <div class="text-muted">Telegram: <a href="#" class="text-black font-bold hover:text-blue">@jtalent_agency</a></div>
+            </div>
+          </div>
+
+          <!-- Vibrant Form Card (Clean, borderless, modern color accents) -->
+          <div class="lg:col-span-7 bg-white p-8 lg:p-14 rounded-3xl shadow-sm">
+            <form id="lead-form" class="space-y-6">
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted font-mono font-bold mb-2">Имя *</label>
+                  <input type="text" required placeholder="Константин" class="w-full px-5 py-4 bg-base rounded-xl border-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue font-sans">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted font-mono font-bold mb-2">Компания *</label>
+                  <input type="text" required placeholder="Название компании" class="w-full px-5 py-4 bg-base rounded-xl border-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue font-sans">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted font-mono font-bold mb-2">Телефон / WhatsApp *</label>
+                  <input type="tel" required placeholder="+7 (999) 000-00-00" class="w-full px-5 py-4 bg-base rounded-xl border-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue font-sans">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted font-mono font-bold mb-2">Email *</label>
+                  <input type="email" required placeholder="ceo@company.ru" class="w-full px-5 py-4 bg-base rounded-xl border-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue font-sans">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-muted font-mono font-bold mb-2">Кого ищете (стек, позиция, вилка)</label>
+                <textarea rows="3" placeholder="Например: Senior Go Developer, вилка до 400к, удаленный формат..." class="w-full px-5 py-4 bg-base rounded-xl border-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue font-sans"></textarea>
+              </div>
+
+              <!-- High-Energy Blue Button -->
+              <button type="submit" class="w-full py-5 bg-blue hover:bg-blueHover text-white text-xs uppercase tracking-widest font-bold rounded-xl transition-all shadow-md hover:shadow-lg font-mono">
+                Отправить заявку на подбор
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- 13. MONUMENTAL FOOTER (J-VERS TYPOGRAPHY)                                  -->
+  <!-- ========================================================================= -->
+  <footer class="bg-black text-white py-20 lg:py-28 overflow-hidden">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-12">
+      
+      <div class="mb-16 pb-16 border-b border-white/10">
+        <a href="mailto:team@j-talent.agency" class="font-syne font-extrabold text-4xl sm:text-7xl lg:text-8xl uppercase tracking-tight hover:text-blue transition-colors block break-all">
+          TEAM@J-TALENT.AGENCY
+        </a>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center justify-between text-xs text-white/50 font-mono gap-4">
+        <div>
+          © 2026 J-TALENT®. Все права защищены.
+        </div>
+        <div class="flex items-center gap-6">
+          <a href="#" class="hover:text-white">Политика конфиденциальности</a>
+          <a href="#" class="hover:text-white">Sitemap.xml</a>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT: SCROLL-ONLY 3D, BURGER, DYNAMIC CALCULATOR, VERTICAL TIMELINE -->
+  <!-- ========================================================================= -->
+  <script>
+    lucide.createIcons();
+
+    // 1. Lenis Smooth Scroll
+    const lenis = new Lenis({
+      duration: 1.1,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // 2. Fixed Burger Drawer
+    const burgerBtn = document.getElementById('burger-btn');
+    const drawer = document.getElementById('menu-drawer');
+    const menuLinks = document.querySelectorAll('.menu-link');
+
+    if (burgerBtn && drawer) {
+      burgerBtn.addEventListener('click', () => {
+        const isOpen = drawer.classList.contains('drawer-open');
+        if (isOpen) {
+          drawer.classList.remove('drawer-open');
+          drawer.classList.add('drawer-closed');
+          burgerBtn.classList.remove('burger-active');
+        } else {
+          drawer.classList.remove('drawer-closed');
+          drawer.classList.add('drawer-open');
+          burgerBtn.classList.add('burger-active');
+        }
+      });
+
+      menuLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          drawer.classList.remove('drawer-open');
+          drawer.classList.add('drawer-closed');
+          burgerBtn.classList.remove('burger-active');
+        });
+      });
+    }
+
+    // 3. Hero 3D Graphic (Slow Majestic Ambient)
+    (function initHero3D() {
+      const canvas = document.getElementById('hero-3d-canvas');
+      if (!canvas) return;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+      camera.position.z = 5.2;
+
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      const geometry = new THREE.TorusKnotGeometry(1.2, 0.32, 128, 24, 2, 3);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x0038FF,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.55
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(1.4, 0, 0);
+      scene.add(mesh);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        mesh.rotation.x += 0.0015;
+        mesh.rotation.y += 0.0025;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', () => {
+        if (!canvas) return;
+        camera.aspect = canvas.clientWidth / canvas.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+      });
+    })();
+
+    // 4. Programmatic 3D Sphere (DOES NOT ROTATE ON IDLE! ROTATES ONLY ON SCROLL)
+    (function initProg3D() {
+      const canvas = document.getElementById('prog-3d-canvas');
+      const progSection = document.getElementById('programmatic');
+      const cap1 = document.getElementById('prog-cap-1');
+      const cap2 = document.getElementById('prog-cap-2');
+      const cap3 = document.getElementById('prog-cap-3');
+      if (!canvas || !progSection) return;
+
+      const scene = new THREE.Scene();
+      // Adjusted camera to prevent any clipping top/bottom
+      const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+      camera.position.z = 4.8;
+
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // Icosahedron with Wireframe + Nodes
+      const geometry = new THREE.IcosahedronGeometry(1.3, 2);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x0038FF,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.85
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+
+      // Core sphere inner glow
+      const innerGeo = new THREE.SphereGeometry(0.7, 16, 16);
+      const innerMat = new THREE.MeshBasicMaterial({
+        color: 0x2E5CFF,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.35
+      });
+      const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+      scene.add(innerMesh);
+
+      // SCROLL-ONLY LOGIC:
+      function handleProgScroll() {
+        const rect = progSection.getBoundingClientRect();
+        const winHeight = window.innerHeight;
+        
+        // Progress from 0 (entering viewport) to 1 (leaving)
+        const progress = Math.max(0, Math.min(1, (winHeight - rect.top) / (winHeight + rect.height)));
+        
+        // Rotate strictly proportional to scroll progress (NO IDLE ROTATION)
+        mesh.rotation.y = progress * Math.PI * 3.5;
+        mesh.rotation.x = progress * Math.PI * 2;
+        innerMesh.rotation.y = -progress * Math.PI * 2;
+
+        // Earlier, balanced sequential reveals so 3rd caption is readable on time
+        if (progress > 0.10) {
+          cap1.classList.add('caption-visible');
+        } else {
+          cap1.classList.remove('caption-visible');
+        }
+
+        if (progress > 0.32) {
+          cap2.classList.add('caption-visible');
+        } else {
+          cap2.classList.remove('caption-visible');
+        }
+
+        if (progress > 0.55) {
+          cap3.classList.add('caption-visible');
+        } else {
+          cap3.classList.remove('caption-visible');
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      window.addEventListener('scroll', handleProgScroll);
+      handleProgScroll();
+
+      window.addEventListener('resize', () => {
+        if (!canvas) return;
+        camera.aspect = canvas.clientWidth / canvas.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.render(scene, camera);
+      });
+    })();
+
+    // 5. Steps Section: Seamless 3D Model (ROTATES ONLY ON SCROLL) + Checkpoints Sync
+    (function initStepsSync() {
+      const canvas = document.getElementById('steps-3d-canvas');
+      const stepSection = document.getElementById('steps');
+      const stepCards = document.querySelectorAll('.step-card');
+      const verticalBar = document.getElementById('steps-vertical-bar');
+      const checkpoints = [
+        document.getElementById('cp-1'),
+        document.getElementById('cp-2'),
+        document.getElementById('cp-3'),
+        document.getElementById('cp-4')
+      ];
+
+      // 3D Model: SCROLL-ONLY ROTATION
+      let meshSteps = null;
+      let rendererSteps = null;
+      let sceneSteps = null;
+      let cameraSteps = null;
+
+      if (canvas) {
+        sceneSteps = new THREE.Scene();
+        cameraSteps = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        cameraSteps.position.z = 3.6;
+
+        rendererSteps = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        rendererSteps.setSize(canvas.clientWidth, canvas.clientHeight);
+        rendererSteps.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const geometry = new THREE.OctahedronGeometry(1.2, 1);
+        const material = new THREE.MeshBasicMaterial({
+          color: 0x0038FF,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.8
+        });
+        meshSteps = new THREE.Mesh(geometry, material);
+        sceneSteps.add(meshSteps);
+        rendererSteps.render(sceneSteps, cameraSteps);
+      }
+
+      // Scroll handler for Steps section (rotates model strictly while scrolling & fills checkpoints)
+      let lastScrollPos = window.scrollY;
+      window.addEventListener('scroll', () => {
+        const delta = window.scrollY - lastScrollPos;
+        lastScrollPos = window.scrollY;
+
+        // Rotate steps 3D model ONLY while scrolling
+        if (meshSteps && rendererSteps && cameraSteps && sceneSteps) {
+          meshSteps.rotation.x += delta * 0.005;
+          meshSteps.rotation.y += delta * 0.008;
+          rendererSteps.render(sceneSteps, cameraSteps);
+        }
+      });
+
+      // Intersection Observer for Checkpoint nodes activation and progress line
+      if (stepCards.length) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const idx = Array.from(stepCards).indexOf(entry.target);
+              if (idx !== -1) {
+                // Update vertical bar
+                if (verticalBar) {
+                  const heights = [15, 42, 68, 96];
+                  verticalBar.style.height = `${heights[idx]}%`;
+                }
+                // Light up checkpoints up to idx
+                checkpoints.forEach((cp, cpIdx) => {
+                  if (cpIdx <= idx) {
+                    cp.classList.add('active');
+                  } else {
+                    cp.classList.remove('active');
+                  }
+                });
+              }
+            }
+          });
+        }, { threshold: 0.45 });
+
+        stepCards.forEach(card => observer.observe(card));
+      }
+
+      window.addEventListener('resize', () => {
+        if (!canvas || !rendererSteps || !cameraSteps) return;
+        cameraSteps.aspect = canvas.clientWidth / canvas.clientHeight;
+        cameraSteps.updateProjectionMatrix();
+        rendererSteps.setSize(canvas.clientWidth, canvas.clientHeight);
+        if (meshSteps) rendererSteps.render(sceneSteps, cameraSteps);
+      });
+    })();
+
+    // 6. Dynamic Calculator (Clean, No-Border Version)
+    (function initCalculator() {
+      const roleBtns = document.querySelectorAll('.calc-btn');
+      const slider = document.getElementById('calc-slider');
+      const countText = document.getElementById('calc-count-text');
+      const timeVal = document.getElementById('calc-time');
+      const reachVal = document.getElementById('calc-reach');
+      const saveVal = document.getElementById('calc-save');
+
+      let currentRole = 'it';
+      let currentCount = 2;
+
+      function updateCalculator() {
+        if (countText) {
+          countText.textContent = currentCount === 1 ? '1 специалист' : (currentCount < 5 ? `${currentCount} специалиста` : `${currentCount} специалистов`);
+        }
+
+        const baseReachPerRole = { it: 900, sales: 1200, ops: 750, exec: 400 };
+        const totalReach = (baseReachPerRole[currentRole] || 800) * currentCount;
+        if (reachVal) {
+          reachVal.textContent = `~${totalReach.toLocaleString('ru-RU')} резюме`;
+        }
+
+        if (currentRole === 'it') {
+          timeVal.textContent = currentCount > 3 ? '10 – 16 дней' : '7 – 12 дней';
+          saveVal.textContent = 'до 42% к рынку';
+        } else if (currentRole === 'sales') {
+          timeVal.textContent = currentCount > 3 ? '7 – 12 дней' : '5 – 9 дней';
+          saveVal.textContent = 'до 48% к рынку';
+        } else if (currentRole === 'ops') {
+          timeVal.textContent = currentCount > 3 ? '9 – 14 дней' : '7 – 11 дней';
+          saveVal.textContent = 'до 35% к рынку';
+        } else {
+          timeVal.textContent = currentCount > 3 ? '18 – 28 дней' : '14 – 20 дней';
+          saveVal.textContent = 'до 30% к рынку';
+        }
+      }
+
+      roleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          roleBtns.forEach(b => {
+            b.classList.remove('bg-black', 'text-white');
+            b.classList.add('bg-white', 'text-black');
+          });
+          btn.classList.remove('bg-white', 'text-black');
+          btn.classList.add('bg-black', 'text-white');
+          currentRole = btn.dataset.role;
+          updateCalculator();
+        });
+      });
+
+      if (slider) {
+        ['input', 'change'].forEach(evt => {
+          slider.addEventListener(evt, (e) => {
+            currentCount = parseInt(e.target.value, 10);
+            updateCalculator();
+          });
+        });
+      }
+
+      updateCalculator();
+    })();
+
+    // 7. Buttery Smooth FAQ Accordion
+    (function initFAQ() {
+      const faqItems = document.querySelectorAll('.faq-item');
+      faqItems.forEach(item => {
+        const btn = item.querySelector('.faq-btn');
+        const wrapper = item.querySelector('.faq-wrapper');
+        const sign = item.querySelector('.faq-sign');
+
+        btn.addEventListener('click', () => {
+          const isOpen = wrapper.classList.contains('is-open');
+
+          faqItems.forEach(other => {
+            other.querySelector('.faq-wrapper').classList.remove('is-open');
+            other.querySelector('.faq-sign').textContent = '+';
+          });
+
+          if (!isOpen) {
+            wrapper.classList.add('is-open');
+            sign.textContent = '−';
+          }
+        });
+      });
+    })();
+
+    // 8. Lead Form Handler
+    const leadForm = document.getElementById('lead-form');
+    if (leadForm) {
+      leadForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        alert('Спасибо! Заявка принята. В версии на Тильде форма связывается с Telegram или CRM.');
+        leadForm.reset();
+      });
+    }
+  </script>
+</body>
+</html>
